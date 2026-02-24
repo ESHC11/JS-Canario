@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const Admin = ({ products, updateProducts }) => {
   // Estados para cada campo del formulario
@@ -12,32 +14,38 @@ const Admin = ({ products, updateProducts }) => {
   const [material, setMaterial] = useState('');
 
   // Función para guardar el nuevo producto (CREATE)
-  const handleAddProduct = (e) => {
+  const handleAddProduct = async (e) => {
     e.preventDefault();
-
+    
     const newProduct = {
-      id: Date.now(), // Generamos un ID único con la fecha actual
-      name,
-      price: parseFloat(price),
-      description,
-      image,
-      features: {
-        size: sizes.split(',').map(s => s.trim()), // Convierte "S, M, L" en arreglo
+        name,
+        price: parseFloat(price),
+        description,
+        image,
+        features: {
+        size: sizes.split(',').map(s => s.trim()),
         color: colors.split(',').map(c => c.trim()),
         material
-      },
-      reviews: [] // Inicia sin comentarios
+        },
+        reviews: []
     };
 
-    // Agregamos el nuevo producto al inicio de la lista
-    const updatedProducts = [newProduct, ...products];
-    updateProducts(updatedProducts);
+    try {
+        await addDoc(collection(db, "products"), newProduct);
+        alert("🔥 ¡Prenda guardada en la Nube!");
+        
+        // Agregamos el nuevo producto al inicio de la lista
+        const updatedProducts = [newProduct, ...products];
+        updateProducts(updatedProducts);
 
-    // Limpiamos el formulario
-    setName(''); setPrice(''); setDescription(''); setImage('/img/');
-    setSizes(''); setColors(''); setMaterial('');
-    
-    alert('🔥 ¡Prenda agregada exitosamente al catálogo!');
+        // Limpiamos el formulario
+        setName(''); setPrice(''); setDescription(''); setImage('/img/');
+        setSizes(''); setColors(''); setMaterial('');
+        
+        alert('🔥 ¡Prenda agregada exitosamente al catálogo!');
+    } catch (error) {
+        console.error("Error al guardar:", error);
+    }
   };
 
   // Función para borrar un producto (DELETE)

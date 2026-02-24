@@ -7,6 +7,8 @@ import { initialProducts } from './data/productos';
 import './index.css';
 import logoSvg from "./assets/logo.svg";
 import Admin from './pages/Admin';
+import { db } from './firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 function App() {
   // Inicializamos el estado leyendo el LocalStorage o usando los datos por defecto
@@ -20,8 +22,14 @@ function App() {
 
   // Cada vez que 'products' cambie (alguien comente), lo guardamos en el navegador
   useEffect(() => {
-    localStorage.setItem('jsCanarioProducts', JSON.stringify(products));
-  }, [products]);
+    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
+      const firebaseProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(firebaseProducts);
+      console.log("Productos actualizados desde Firebase:", firebaseProducts);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <Router>

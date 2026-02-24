@@ -1,8 +1,10 @@
 // src/pages/ProductDetail.jsx
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { db } from '../firebase';
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 
-const ProductDetail = ({ products, updateProducts }) => {
+const ProductDetail = ({ products }) => {
   const { id } = useParams(); // Obtenemos el ID de la URL
   const productIndex = products.findIndex(p => p.id === parseInt(id));
   const product = products[productIndex];
@@ -14,27 +16,36 @@ const ProductDetail = ({ products, updateProducts }) => {
   if (!product) return <h2 style={{textAlign: 'center'}}>Producto no encontrado</h2>;
 
   // Función para guardar el comentario (CREATE)
-  const handleAddComment = (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
-    if(!newName.trim() || !newComment.trim()) return;
 
-    const review = {
-      name: newName,
-      rating: 5, // Por defecto le ponemos 5 estrellas
-      comment: newComment,
-      date: new Date().toISOString().split('T')[0] // Fecha de hoy
-    };
+  // El objeto del nuevo comentario
+  const newReview = {
+    user: newName, // El estado que tengas para el nombre
+    comment: newComment, // El estado para el texto
+    date: new Date().toLocaleString(),
+    id: Date.now() // Un ID para identificar el comentario
+  };
 
-    // Clonamos el arreglo de productos para actualizarlo
-    const updatedProducts = [...products];
-    updatedProducts[productIndex].reviews.push(review);
+  try {
+    // 1. Referencia al documento exacto de esta prenda en Firestore
+    // 'id' es el que viene de la URL (useParams)
+    const productRef = doc(db, "products", id);
 
-    // Actualizamos el estado global
-    updateProducts(updatedProducts);
+    // 2. Actualizamos el documento agregando el comentario al array 'reviews'
+    await updateDoc(productRef, {
+      reviews: arrayUnion(newReview)
+    });
+
+    // 3. Limpiamos el formulario
+    setNewName('');
+    setNewComment('');
     
-    // Limpiamos el formulario
-    setNewName("");
-    setNewComment("");
+    alert("💬 ¡Comentario publicado globalmente!");
+  } catch (error) {
+    console.error("Error al comentar:", error);
+    alert("No se pudo publicar el comentario.");
+  }
   };
 
   return (
